@@ -1,10 +1,8 @@
-#include <Ethernet.h>
-#include <SPI.h>
+#include <SPI.h> 
+#include <Ethernet2.h>
 #include <ArduinoJson.h>
 #include <RestClient.h>
-
-#define delayTime 300     // Time in seconds beetwen sendings
-#define IP "192.168.1.6"  // Server IP
+#define IP "127.0.0.1"  // Server IP
 #define PORT 5000         // Server Port
 
 RestClient client = RestClient(IP, PORT);
@@ -26,59 +24,90 @@ const int pinBuzzer = 9;     //relevador 1 conectado a pin 9
  
 void setup(){
   delay(5000);
-  Serial.println("connect to network");
-  client.dhcp();
   Serial.begin(9600);
   sensors.begin(); 
+  Serial.println("connect to network");
+  client.dhcp();
+  Serial.println("Setup!");
+ 
 }
 String response;
 void loop(){
-  response = "";
-  client.setHeader("Authorization: Basic cmljdmVhbDoxMjM0==");
-  client.setHeader("Content-Type: application/json");
-    
+  
     TemperaturaDS18B20();
     delay(2000);
     Varometrobmp180();
     delay(2000);
     sensorgas();
-    delay(600000);
+    delay(6000);
 }
 
 void TemperaturaDS18B20()  {
+ 
   sensors.requestTemperatures(); //Prepara el sensor para la lectura
+   /*
   Serial.print("<fe02f10f-6919-4fcd-a5c2-603a2d1de5f5,");
   Serial.print(sensors.getTempCByIndex(0)); //Se lee e imprime la temperatura en grados Celsius
-  Serial.print(">\n");
-
+  Serial.print(">\n");*/
+  response = "";
+  client.setHeader("Authorization: Basic Z3VzdGF2bzoxMjM0==");
+  client.setHeader("Content-Type: application/json");
+  StaticJsonBuffer<200> jsonBuffer;
+  float t=sensors.getTempCByIndex(0);
   char json[256];
   JsonObject& root = jsonBuffer.createObject();
-  root["TemperaturaDS18B20"] = sensors.getTempCByIndex(0));
+  root["TemperaturaDS18B20"] = t;
   root.printTo(json, sizeof(json));
- 
-}
+  Serial.println(json);
+  int statusCode = client.post("/api/v1.0/temperature", json, &response);
+  Serial.print("Status code from server: ");
+  Serial.println(statusCode);
+  
+ }
 
 void Varometrobmp180(){
-    
+    /*
     Serial.print("<086ec220-c82d-434d-bef4-707c9ea16e94,");
     Serial.print(bmp.readPressure());
     Serial.print(">\n");
-
+    */
+  response = "";
+  client.setHeader("Authorization: Basic Z3VzdGF2bzoxMjM0==");
+  client.setHeader("Content-Type: application/json");
+  StaticJsonBuffer<200> jsonBuffer2;
+  float p=bmp.readPressure();
+  char json2[256];
+  JsonObject& root2 = jsonBuffer2.createObject();
+  root2["Varometrobmp180"] = p;
+  root2.printTo(json2, sizeof(json2));
+  Serial.println(json2);
+  int  statusCode = client.post("/api/v1.0/temperature", json2, &response);
+  Serial.print("Status code from server: ");
+  Serial.println(statusCode);
 }
 
 void sensorgas(){
+  response = "";
+  client.setHeader("Authorization: Basic Z3VzdGF2bzoxMjM0==");
+  client.setHeader("Content-Type: application/json");
+  StaticJsonBuffer<200> jsonBuffer4;
   bool state= digitalRead(gas_PIN);
+  char json4[256];
+  JsonObject& root4 = jsonBuffer4.createObject();
+  root4["Varometrobmp180"] = state;
+  root4.printTo(json4, sizeof(json4));
   if (!state){
-    
-    Serial.print("<7d9353d1-5b0a-4ffc-8acc-4374d7e3720d,");
-    Serial.print(state);
-    Serial.print(">\n");
+    Serial.println(json4);
+    int  statusCode = client.post("/api/v1.0/temperature", json4, &response);
+    Serial.print("Status code from server: ");
+    Serial.println(statusCode);
     tone(pinBuzzer, 523, 1000);
   }
   else{
-    Serial.print("<7d9353d1-5b0a-4ffc-8acc-4374d7e3720d,");
-    Serial.print(state);
-    Serial.print(">\n");
+    Serial.println(json4);
+    int  statusCode = client.post("/api/v1.0/temperature", json4, &response);
+    Serial.print("Status code from server: ");
+    Serial.println(statusCode);
   }
-  
-}
+ 
+} 
